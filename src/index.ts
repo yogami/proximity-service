@@ -41,6 +41,22 @@ const startTime = Date.now();
 app.use('*', cors());
 app.use('*', logger());
 
+// ─── API Key Auth ───────────────────────────────────────────────────────────
+// All /api/* routes require X-API-Key header.
+// /health is exempt so Railway health checks work.
+// If PROXIMITY_API_KEY is unset, auth is disabled (local dev).
+
+const API_KEY = process.env.PROXIMITY_API_KEY;
+
+app.use('/api/*', async (c, next) => {
+    if (!API_KEY) return next(); // Dev mode — no key required
+    const provided = c.req.header('X-API-Key');
+    if (provided !== API_KEY) {
+        return c.json({ error: 'Unauthorized — invalid or missing X-API-Key' }, 401);
+    }
+    return next();
+});
+
 // ─── Health ─────────────────────────────────────────────────────────────────
 
 app.get('/health', (c) => {
